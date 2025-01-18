@@ -1,6 +1,4 @@
 
-
-```markdown
 # Blockchain Project with Node.js
 
 This project demonstrates a simple implementation of a blockchain using Node.js. 
@@ -132,4 +130,3 @@ If you encounter any issues during installation or while running the code:
 This project is a simple demonstration of how blockchain works in practice using Node.js. The focus is on understanding the fundamental concepts of blockchain, including hashing, linking blocks, and chain validation. You can extend this project by adding additional features such as mining, proof-of-work, or transaction handling.
 
 ---
-```
