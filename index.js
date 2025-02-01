@@ -2,6 +2,16 @@ import pkg from 'crypto-js';
 const { SHA256 } = pkg;
 import { createTimeStamp } from './utils.js';
 
+
+// Class representing a transaction between two addresses.
+class Transaction {
+    constructor(fromAddress, toAddress, amount) {
+        this.fromAddress = fromAddress; // Sender's address
+        this.toAddress = toAddress;   // Recipient's address
+        this.amount = amount;         // Amount being transferred
+    }
+}
+
 /**
  * The Block class represents a single block in the blockchain.
  * 
@@ -18,15 +28,13 @@ class Block {
     /**
      * Creates a new block with the given parameters.
      * 
-     * @param {number} index - The index of the block in the blockchain (starting from 0 for the genesis block).
      * @param {string} timestamp - The timestamp indicating when the block was created.
-     * @param {object} data - The data stored in the block (e.g., transactions or messages).
+     * @param {object} transaction - The data stored in the block (e.g., transactions or messages).
      * @param {string} prevHash - The hash of the previous block (default is an empty string for the genesis block).
      */
-    constructor(index, timestamp, data, prevHash = '') {
-        this.index = index;
+    constructor(timestamp, transaction, prevHash = '') {
         this.timestamp = timestamp;
-        this.data = data;
+        this.transaction = transaction;
         this.prevHash = prevHash;
         this.hash = this.calculateHash();
         this.nonce = 0;
@@ -39,7 +47,7 @@ class Block {
      * - `index`
      * - `prevHash`
      * - `timestamp`
-     * - `data` (converted to a string)
+     * - `transaction` (converted to a string)
      * - `nonce` (used to adjust the hash during the mining process)
      * 
      * This hash serves as a unique identifier for the block and ensures its integrity.
@@ -95,7 +103,9 @@ class Blockchain {
      */
     constructor() {
         this.chain = [this.createGenesisBlock()];
-        this.difficulty = 2;  // The mining difficulty (number of leading zeros required in the hash).
+        this.difficulty = 2; // Difficulty level for mining
+        this.pendingTransaction = []; // Store transactions before mining
+        this.miningReward = 100; // Reward for mining a new block
     }
 
     /**
@@ -106,7 +116,6 @@ class Blockchain {
      */
     createGenesisBlock() {
         return new Block(
-            0,                  // The first block in the chain (index 0).
             createTimeStamp(),  // Timestamp of when the block is created.
             "Genesis block",    // Data of the block (in this case, a simple message).
             "0"                 // The Genesis Block has no previous block, so the hash is "0".
@@ -123,21 +132,47 @@ class Blockchain {
     }
 
     /**
-     * Adds a new block to the blockchain.
+     * Mines all pending transactions and creates a new block.
      * 
-     * The new block is linked to the previous block by setting its `prevHash` to the hash of the last block.
-     * After calculating its hash, the new block is mined using the specified difficulty level.
-     * Finally, the block is added to the blockchain.
+     * - The block is created using all pending transactions.
+     * - The block is then mined to meet the required difficulty.
+     * - After mining, the block is added to the blockchain.
+     * - A reward transaction is created and added to the pending transactions.
      * 
-     * @param {Block} newBlock - The new block to be added to the blockchain.
+     * @param {string} miningRewardAddress - Address to receive the mining reward.
      */
-    addBlock(newBlock) {
-        // Link the new block to the previous block in the chain.
-        newBlock.prevHash = this.getLatestBlock().hash;
-        // Mine the new block with the specified difficulty.
-        newBlock.mineBlock(this.difficulty);
-        // Add the mined block to the blockchain.
-        this.chain.push(newBlock);
+
+    minePedingTransactions(miningRewardAddress) {
+        let block = new Block(createTimeStamp(), this.pendingTransaction);
+        block.mineBlock(this.difficulty);
+
+        console.log("Block successfully mined!");
+        this.chain.push(block);
+
+        this.pendingTransaction = [
+            new Transaction(null, miningRewardAddress, this.miningReward)
+        ]
+    }
+
+    createTransaction(transaction) {
+        this.pendingTransaction.push(transaction);
+    }
+
+    getBalanceOfAddress(address) {
+        let balance = 0;
+        for (let block of this.chain) {
+            for (let trans of block.transaction) {
+                if (trans.fromAddress === address) {
+                    balance -= trans.amount;
+                }
+
+                if (trans.toAddress === address) {
+                    balance += trans.amount;
+                }
+            }
+        }
+
+        return balance;
     }
 
     /**
@@ -179,12 +214,15 @@ class Blockchain {
 // Create a new blockchain (poppiCoin) and add some blocks.
 let poppiCoin = new Blockchain();
 
-// Adding blocks with sample data.
-console.log("Mining block : 1")
-poppiCoin.addBlock(new Block(1, createTimeStamp(), { amount: 4 }));
-console.log("Mining block : 2")
-poppiCoin.addBlock(new Block(2, createTimeStamp(), { amount: 8 }));
-console.log("Mining block : 3")
-poppiCoin.addBlock(new Block(3, createTimeStamp(), { amount: 10 }));
 
-console.log("Poppicoin:", JSON.stringify(poppiCoin, null, 4))
+poppiCoin.createTransaction(new Transaction("address1", "address2", 100));
+poppiCoin.createTransaction(new Transaction("address1", "address2", 200));
+
+console.log('\n Starting the miner.');
+poppiCoin.minePedingTransactions('lolle-address');
+console.log("lolle-addres balance is:", poppiCoin.getBalanceOfAddress("lolle-address"));
+
+console.log('\n Starting the miner 2.');
+poppiCoin.minePedingTransactions('lolle-address');
+console.log("lolle-addres balance is:", poppiCoin.getBalanceOfAddress("lolle-address"));
+
