@@ -1,3 +1,4 @@
+## **Coins vs Tokens**
 The main difference between **tokens** and **coins** lies in their use and function within a blockchain ecosystem.
 
 ### **Coin**
